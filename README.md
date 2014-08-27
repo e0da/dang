@@ -23,8 +23,20 @@ dang solr     # Re-index solr in apm_bundle directory
 dang upgrade  # Upgrade this script in via git
 ```
 
-Bonus Fun!
-----------
+apm_bundle directory
+--------------------
+
+Your apm_bundle directory is assumed to be `~/code/apm_bundle`. That's probably
+not where it is! To fix this, set your apm_bundle directory thusly:
+
+```sh
+echo "export APM_BUNDLE=~/src/apm_bundle" >> .dangrc
+```
+
+Obviously, substitute the actual path to your repo in there.
+
+More Fun!
+---------
 
 It is _highly_ recommended that you symlink this script with a more satisfying
 name. If you're a BSG fan, you might try
