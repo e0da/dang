@@ -19,8 +19,8 @@ Usage
 dang help     # Show all commands
 dang mysql    # Restart MySQL
 dang selenium # Restart Selenium
-dang solr     # Re-index solr in $apm_bundle (set $PROPERTY_DIR by ex)
-dang upgrade  # Upgrade this script in $SCRIPTDIR via git
+dang solr     # Re-index solr in apm_bundle directory
+dang upgrade  # Upgrade this script in via git
 ```
 
 Bonus Fun!

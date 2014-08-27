@@ -45,7 +45,7 @@ Usage: $SCRIPT_NAME task
 Tasks:
   mysql    - Restart MySQL
   selenium - Restart Selenium
-  solr     - Re-index solr in $apm_bundle (set $PROPERTY_DIR by ex)
+  solr     - Re-index solr in $apm_bundle (see below to set your apm_bundle directory)
   upgrade  - Upgrade this script in $SCRIPTDIR via git
 
 You can set the location of your apm_bundle repo by adding a line like
