@@ -1,10 +1,22 @@
 #!/bin/sh
 
-PROPERTY_DIR="$HOME/code/apm_bundle/apps/property"
+[ ! -z "$DEBUG_APM" ] && set -x
 
-SCRIPT_NAME="$(basename "$0")"
+trap 'kill 0' INT TERM EXIT
 
-readonly ARGV="$*"
+readonly ARGS="$@"
+readonly SCRIPT="$(readlink "$0" || echo "$0")"
+readonly SCRIPTDIR="$(dirname $SCRIPT)"
+
+: ${CONFFILE:=$HOME/.dangrc}
+: ${APM_BUNDLE:=$HOME/code/apm_bundle}
+[ -f $CONFFILE ] && . $CONFFILE
+
+readonly PROPERTY_DIR="${APM_BUNDLE}/apps/property"
+readonly SCRIPT_NAME="$(basename "$0")"
+readonly CAPITALIZED_SCRIPT_NAME="$(echo $SCRIPT_NAME | perl -nE 'say ucfirst')"
+
+trap 'kill 0' INT TERM EXIT
 
 function restart_with_launchctl() {
   local process_name=$1; shift
@@ -24,6 +36,37 @@ function reindex_solr() {
   rake solr:reindex
 }
 
+function print_help() {
+  local return_code=$1; shift
+
+  printf "
+Usage: $SCRIPT_NAME task
+
+Tasks:
+  mysql    - Restart MySQL
+  selenium - Restart Selenium
+  solr     - Re-index solr in $apm_bundle (set $PROPERTY_DIR by ex)
+  upgrade  - Upgrade this script in $SCRIPTDIR via git
+
+You can set the location of your apm_bundle repo by adding a line like
+
+echo \"export APM_BUNDLE=\$HOME/src/apm_bundle\" >> ${CONFFILE}
+
+This script assumes you're using Homebrew on a Mac.
+"
+  exit $return_code
+}
+
+function upgrade_self() {
+  cd "$SCRIPTDIR"
+  git checkout release
+  git pull origin release
+}
+
+function enable_expert_mode() {
+  ln -sf dang ~/bin/$(echo ZnVjawo= | base64 -D)
+}
+
 function main() {
   local task="$1"; shift
   case "$task" in
@@ -36,9 +79,20 @@ function main() {
     solr)
       reindex_solr
       ;;
+    help|-h|--help)
+      print_help
+      ;;
+    upgrade)
+      upgrade_self
+      ;;
+    expert_mode)
+      enable_expert_mode
+      echo "Expert mode unlocked!"
+      ;;
     *)
-      echo "$SCRIPT_NAME $task?! $SCRIPT_NAME YOU!"
+      echo "$CAPITALIZED_SCRIPT_NAME $task?! $CAPITALIZED_SCRIPT_NAME YOU, buddy!"
+      echo "(Try $SCRIPT_NAME help)"
   esac
 }
 
-main $ARGV
+main $ARGS
