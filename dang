@@ -5,7 +5,7 @@
 trap 'kill 0' INT TERM EXIT
 
 readonly ARGS="$@"
-readonly SCRIPT="$(readlink "$0" || echo "$0")"
+readonly SCRIPT="$(perl -MCwd -e 'print Cwd::abs_path shift' `which $0`)"
 readonly SCRIPTDIR="$(dirname $SCRIPT)"
 
 : ${CONFFILE:=$HOME/.dangrc}
@@ -14,7 +14,7 @@ readonly SCRIPTDIR="$(dirname $SCRIPT)"
 
 readonly PROPERTY_DIR="${APM_BUNDLE}/apps/property"
 readonly SCRIPT_NAME="$(basename "$0")"
-readonly CAPITALIZED_SCRIPT_NAME="$(echo $SCRIPT_NAME | perl -nE 'say ucfirst')"
+readonly CAPITALIZED_SCRIPT_NAME="$(perl -e 'print ucfirst shift' $SCRIPT_NAME)"
 
 trap 'kill 0' INT TERM EXIT
 
@@ -45,7 +45,7 @@ Usage: $SCRIPT_NAME task
 Tasks:
   mysql    - Restart MySQL
   selenium - Restart Selenium
-  solr     - Re-index solr in $apm_bundle (see below to set your apm_bundle directory)
+  solr     - Re-index solr in $apm_bundle
   upgrade  - Upgrade this script in $SCRIPTDIR via git
 
 You can set the location of your apm_bundle repo by adding a line like
