@@ -16,13 +16,15 @@ Usage
 -----
 
 ```sh
+dang help     # Show all commands
 dang mysql    # Restart MySQL
-dang solr     # Re-index solr
 dang selenium # Restart Selenium
+dang solr     # Re-index solr in $apm_bundle (set $PROPERTY_DIR by ex)
+dang upgrade  # Upgrade this script in $SCRIPTDIR via git
 ```
 
-Bonus Fun
----------
+Bonus Fun!
+----------
 
 It is _highly_ recommended that you symlink this script with a more satisfying
 name. If you're a BSG fan, you might try
