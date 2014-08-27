@@ -1,0 +1,44 @@
+#!/bin/sh
+
+PROPERTY_DIR="$HOME/code/apm_bundle/apps/property"
+
+SCRIPT_NAME="$(basename "$0")"
+
+readonly ARGV="$*"
+
+function restart_with_launchctl() {
+  local process_name=$1; shift
+  local job_name=$1; shift
+  launchctl stop $job_name
+  printf "Waiting for $process_name to die. Maybe you should grab a beer."
+  while pgrep -f $process_name &>/dev/null; do
+    printf '.'
+    sleep 0.5
+  done
+  echo
+  launchctl start $job_name
+}
+
+function reindex_solr() {
+  cd "$PROPERTY_DIR"
+  rake solr:reindex
+}
+
+function main() {
+  local task="$1"; shift
+  case "$task" in
+    mysql)
+      restart_with_launchctl mysqld homebrew.mxcl.mysql
+      ;;
+    selenium)
+      restart_with_launchctl selenium-server-standalone homebrew.mxcl.selenium-server-standalone
+      ;;
+    solr)
+      reindex_solr
+      ;;
+    *)
+      echo "$SCRIPT_NAME $task?! $SCRIPT_NAME YOU!"
+  esac
+}
+
+main $ARGV
