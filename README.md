@@ -6,10 +6,15 @@ Quick fixes for common frustrations.
 Installation
 ------------
 
+Copy and paste this:
+
 ```sh
-git clone https://github.com/justinforce/dang
-cd dang
-make install
+(
+  git clone https://github.com/justinforce/dang
+  cd dang
+  git checkout release
+  make install
+)
 ```
 
 Usage
