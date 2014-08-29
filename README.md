@@ -21,11 +21,12 @@ Usage
 -----
 
 ```sh
-dang help     # Show all commands
-dang mysql    # Restart MySQL
-dang selenium # Restart Selenium
-dang solr     # Re-index solr in apm_bundle directory
-dang upgrade  # Upgrade this script in via git
+dang mysql      # Restart MySQL
+dang selenium   # Restart Selenium
+dang solr       # Re-index solr in apm_bundle dir
+dang migrations # Rerun the last migration in this dir (test and development)
+dang databases  # Drop, recreate, remigrate, and load fixtures of all APM DBs
+dang upgrade    # Upgrade this script in via git
 ```
 
 apm_bundle directory
