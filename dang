@@ -19,16 +19,37 @@ readonly CAPITALIZED_SCRIPT_NAME="$(perl -e 'print ucfirst shift' $SCRIPT_NAME)"
 trap 'kill 0' INT TERM EXIT
 
 function restart_with_launchctl() {
-  local process_name=$1; shift
-  local job_name=$1; shift
+  local process_name="$1"; shift
+  local job_name="$1"; shift
+  local started_condition="$1"; shift
+
   launchctl stop $job_name
   printf "Waiting for $process_name to die. Maybe you should grab a beer."
-  while pgrep -f $process_name &>/dev/null; do
+  wait_for_false "pgrep -f $process_name"
+
+  launchctl start $job_name
+  if [ ! -z "$started_condition" ]; then
+    printf "Waiting for $process_name to start. Again."
+    wait_for_true "$started_condition"
+  fi
+}
+
+function wait_for_true() {
+  local condition="$1"; shift
+  while ! (eval "$condition" &>/dev/null); do
     printf '.'
     sleep 0.5
   done
   echo
-  launchctl start $job_name
+}
+
+function wait_for_false() {
+  local condition="$1"; shift
+  while (eval "$condition" &>/dev/null); do
+    printf '.'
+    sleep 0.5
+  done
+  echo
 }
 
 function reindex_solr() {
@@ -43,10 +64,12 @@ function print_help() {
 Usage: $SCRIPT_NAME task
 
 Tasks:
-  mysql    - Restart MySQL
-  selenium - Restart Selenium
-  solr     - Re-index solr in $apm_bundle
-  upgrade  - Upgrade this script in $SCRIPTDIR via git
+  mysql      - Restart MySQL
+  selenium   - Restart Selenium
+  solr       - Re-index solr in $apm_bundle
+  migrations - Rerun the last migration in this dir (test and development)
+  databases  - Drop, recreate, remigrate, and load fixtures of all APM DBs
+  upgrade    - Upgrade this script in $SCRIPTDIR via git
 
 You can set the location of your apm_bundle repo by adding a line like
 
@@ -67,14 +90,49 @@ function enable_expert_mode() {
   ln -sf dang ~/bin/$(echo ZnVjawo= | base64 -D)
 }
 
+function rollback_then_migrate() {
+  local app="$1"; shift
+
+  # cd to app if it's defined
+  case "$app" in
+    property)
+      cd "$PROPERTY_DIR"
+    ;;
+  esac
+  for environment in test development; do
+    RAILS_ENV=$environment rake db:migrate:redo &
+  done
+  wait
+}
+
+function recreate_all_databases() {
+  local dir
+  for dir in "$APM_BUNDLE"/apps/* "$PROPERTY_DIR"/engines/*; do
+    cd "$dir"
+    if [ -d db/migrate ]; then
+      for environment in test development; do
+        RAILS_ENV=$environment rake db:drop db:create db:migrate db:fixtures:load &
+      done
+    fi
+  done
+  wait
+}
+
 function main() {
   local task="$1"; shift
+  local args="$*"
   case "$task" in
     mysql)
-      restart_with_launchctl mysqld homebrew.mxcl.mysql
+      restart_with_launchctl \
+        mysqld \
+        homebrew.mxcl.mysql \
+        "echo 'select count(*) from db' | mysql -uroot mysql"
       ;;
     selenium)
-      restart_with_launchctl selenium-server-standalone homebrew.mxcl.selenium-server-standalone
+      restart_with_launchctl \
+        selenium-server-standalone \
+        homebrew.mxcl.selenium-server-standalone \
+        'pgrep -f selenium-server-standalone'
       ;;
     solr)
       reindex_solr
@@ -88,6 +146,12 @@ function main() {
     expert_mode)
       enable_expert_mode
       echo "Expert mode unlocked!"
+      ;;
+    migrations)
+      rollback_then_migrate $args
+      ;;
+    databases)
+      recreate_all_databases
       ;;
     *)
       echo "$CAPITALIZED_SCRIPT_NAME $task?! $CAPITALIZED_SCRIPT_NAME YOU, buddy!"
