@@ -57,10 +57,15 @@ function reindex_solr() {
   rake solr:reindex
 }
 
+function version() {
+  cat "${SCRIPTDIR}/VERSION"
+}
+
 function print_help() {
   local return_code=$1; shift
 
-  printf "
+  printf "dang! $(version) - Quick fixes for common frustrations
+
 Usage: $SCRIPT_NAME task
 
 Tasks:
@@ -70,12 +75,15 @@ Tasks:
   migrations - Rerun the last migration in this dir (test and development)
   databases  - Drop, recreate, remigrate, and load fixtures of all APM DBs
   upgrade    - Upgrade this script in $SCRIPTDIR via git
+  version    - Print the version number
 
 You can set the location of your apm_bundle repo by adding a line like
 
 echo \"export APM_BUNDLE=\$HOME/src/apm_bundle\" >> ${CONFFILE}
 
 This script assumes you're using Homebrew on a Mac.
+
+Website: https://github.com/justinforce/dang
 "
   exit $return_code
 }
@@ -139,6 +147,9 @@ function main() {
       ;;
     help|-h|--help)
       print_help
+      ;;
+    version)
+      echo $(version)
       ;;
     upgrade)
       upgrade_self
