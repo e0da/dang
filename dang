@@ -107,21 +107,30 @@ function rollback_then_migrate() {
       cd "$PROPERTY_DIR"
     ;;
   esac
-  for environment in test development; do
-    RAILS_ENV=$environment rake db:migrate:redo &
-  done
+  in_test_and_development rake db:migrate:redo &
   wait
+}
+
+function in_test_and_development() {
+  for environment in test development; do
+    RAILS_ENV=$environment $*
+  done
+}
+
+function recreate_databases() {
+  # XXX You have to do these tasks separately because race conditions arise,
+  # such as reports not being able to find the users table to add a foreign key
+  # >_<
+  rake db:drop
+  rake db:create
+  rake db:migrate db:fixtures:load
 }
 
 function recreate_all_databases() {
   local dir
   for dir in "$APM_BUNDLE"/apps/* "$PROPERTY_DIR"/engines/*; do
     cd "$dir"
-    if [ -d db/migrate ]; then
-      for environment in test development; do
-        RAILS_ENV=$environment rake db:drop db:create db:migrate db:fixtures:load &
-      done
-    fi
+    [ -d db/migrate ] && in_test_and_development recreate_databases &
   done
   wait
 }
