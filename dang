@@ -2,7 +2,7 @@
 
 [ ! -z "$DEBUG_APM" ] && set -x
 
-trap 'kill 0' INT TERM EXIT
+trap exit_cleanly INT TERM EXIT
 
 readonly ARGS="$@"
 readonly SCRIPT="$(perl -MCwd -e 'print Cwd::abs_path shift' `which $0`)"
@@ -16,7 +16,14 @@ readonly PROPERTY_DIR="${APM_BUNDLE}/apps/property"
 readonly SCRIPT_NAME="$(basename "$0")"
 readonly CAPITALIZED_SCRIPT_NAME="$(perl -e 'print ucfirst shift' $SCRIPT_NAME)"
 
-trap 'kill 0' INT TERM EXIT
+function exit_cleanly() {
+  kill 0
+  KILLED=1
+}
+
+function is_killed() {
+  [ ! -z "$KILLED" ]
+}
 
 function restart_with_launchctl() {
   local process_name="$1"; shift
@@ -34,11 +41,13 @@ function restart_with_launchctl() {
   fi
 }
 
+# TODO DRY wait_for_{true,false}
 function wait_for_true() {
   local condition="$1"; shift
   while ! (eval "$condition" &>/dev/null); do
     printf '.'
     sleep 0.5
+    is_killed && return # XXX Otherwise you get stuck here when you Ctrl-C
   done
   echo
 }
@@ -48,6 +57,7 @@ function wait_for_false() {
   while (eval "$condition" &>/dev/null); do
     printf '.'
     sleep 0.5
+    is_killed && return # XXX Otherwise you get stuck here when you Ctrl-C
   done
   echo
 }
@@ -98,23 +108,11 @@ function enable_expert_mode() {
   ln -sf dang ~/bin/$(echo ZnVjawo= | base64 -D)
 }
 
-function rollback_then_migrate() {
-  local app="$1"; shift
-
-  # cd to app if it's defined
-  case "$app" in
-    property)
-      cd "$PROPERTY_DIR"
-    ;;
-  esac
-  in_test_and_development rake db:migrate:redo &
-  wait
-}
-
 function in_test_and_development() {
   for environment in test development; do
-    RAILS_ENV=$environment $*
+    RAILS_ENV=$environment $* &
   done
+  wait
 }
 
 function recreate_databases() {
@@ -126,11 +124,21 @@ function recreate_databases() {
   rake db:migrate db:fixtures:load
 }
 
+# TODO DRY the "for dir in blah blah" part
 function recreate_all_databases() {
   local dir
   for dir in "$APM_BUNDLE"/apps/* "$PROPERTY_DIR"/engines/*; do
     cd "$dir"
     [ -d db/migrate ] && in_test_and_development recreate_databases &
+  done
+  wait
+}
+
+function rollback_then_migrate_all_databases() {
+  local dir
+  for dir in "$APM_BUNDLE"/apps/* "$PROPERTY_DIR"/engines/*; do
+    cd "$dir"
+    [ -d db/migrate ] && in_test_and_development rake db:migrate:redo &
   done
   wait
 }
@@ -168,7 +176,7 @@ function main() {
       echo "Expert mode unlocked!"
       ;;
     migrations)
-      rollback_then_migrate $args
+      rollback_then_migrate_all_databases $args
       ;;
     databases)
       recreate_all_databases
@@ -176,6 +184,7 @@ function main() {
     *)
       echo "$CAPITALIZED_SCRIPT_NAME $task?! $CAPITALIZED_SCRIPT_NAME YOU, buddy!"
       echo "(Try $SCRIPT_NAME help)"
+      ;;
   esac
 }
 
