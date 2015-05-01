@@ -95,7 +95,7 @@ function upgrade_self() {
 }
 
 function enable_expert_mode() {
-  ln -sf dang ~/bin/$(echo ZnVjawo= | base64 -D)
+  ln -sf dang ~/bin/$(echo ZnVjawo= | base64 --decode)
 }
 
 function rollback_then_migrate() {
