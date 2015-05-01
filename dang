@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 [ ! -z "$DEBUG_APM" ] && set -x
 
