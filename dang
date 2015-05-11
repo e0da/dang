@@ -135,6 +135,15 @@ function recreate_all_databases() {
   wait
 }
 
+function mac_is_a_playskool_operating_system_for_stupid_babies() {
+  sudo rm -rf /.Spotlight-V100
+  for action in unload load; do
+    sudo launchctl $action -w \
+      /System/Library/LaunchDaemons/com.apple.metadata.mds.plist
+  done
+}
+
+
 function main() {
   local task="$1"; shift
   local args="$*"
@@ -172,6 +181,9 @@ function main() {
       ;;
     databases)
       recreate_all_databases
+      ;;
+    spotlight)
+      mac_is_a_playskool_operating_system_for_stupid_babies
       ;;
     *)
       echo "$CAPITALIZED_SCRIPT_NAME $task?! $CAPITALIZED_SCRIPT_NAME YOU, buddy!"
